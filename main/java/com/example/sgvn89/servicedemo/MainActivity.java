@@ -17,6 +17,7 @@ public class MainActivity extends Activity {
     Button start;
     Button stop;
     Intent intent;
+    IntentFilter intentFilter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,18 +55,18 @@ public class MainActivity extends Activity {
             }
         });
 
+        //Register BroadcastReceiver
+        //to receive event from our service
+        myReceiver = new MyReceiver();
+        intentFilter = new IntentFilter();
+        intentFilter.addAction(MyService.MY_ACTION);
+        registerReceiver(myReceiver, intentFilter);
+
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-
-        //Register BroadcastReceiver
-        //to receive event from our service
-        myReceiver = new MyReceiver();
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(MyService.MY_ACTION);
-        registerReceiver(myReceiver, intentFilter);
 
         // Store our shared preference
         getSharedPreferences("ourInfo", MODE_PRIVATE).edit().putBoolean("active", true).apply();
@@ -77,6 +78,12 @@ public class MainActivity extends Activity {
 
         // Store our shared preference
         getSharedPreferences("ourInfo", MODE_PRIVATE).edit().putBoolean("active", false).apply();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(myReceiver);
     }
 
     private class MyReceiver extends BroadcastReceiver {
