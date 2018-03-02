@@ -181,7 +181,7 @@ public class MainActivity extends AppCompatActivity implements AddAlertActivity.
 
         @Override
         public void onReceive(Context arg0, Intent arg1) {
-            String dataPassed = arg1.getStringExtra("dataPassed");
+            String dataPassed = arg1.getStringExtra(CoinNameSyncJob.DATA_NAME);
             Toast.makeText(getApplicationContext(), dataPassed, Toast.LENGTH_SHORT).show();
 //            updateCoinPrice();
 //            updateNewCoinAvailable();
