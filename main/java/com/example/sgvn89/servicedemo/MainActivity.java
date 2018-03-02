@@ -10,6 +10,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.evernote.android.job.JobManager;
+
 public class MainActivity extends Activity {
 
     MyReceiver myReceiver;
@@ -18,24 +20,27 @@ public class MainActivity extends Activity {
     Button stop;
     Intent intent;
     IntentFilter intentFilter;
+    int result;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        final Thread.UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
+//        final Thread.UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
+//
+//        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+//            @Override
+//            public void uncaughtException(Thread thread, Throwable throwable) {
+//                // fix our issues for shared preferences
+//                getSharedPreferences("ourInfo", MODE_PRIVATE).edit().putBoolean("active", false).apply();
+//
+//                // Handle everything else
+//                defaultHandler.uncaughtException(thread, throwable);
+//            }
+//        });
 
-        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(Thread thread, Throwable throwable) {
-                // fix our issues for shared preferences
-                getSharedPreferences("ourInfo", MODE_PRIVATE).edit().putBoolean("active", false).apply();
-
-                // Handle everything else
-                defaultHandler.uncaughtException(thread, throwable);
-            }
-        });
-
+//        JobManager.create(this).addJobCreator(new DemoJobCreator());
+//
         intent = new Intent(this, AutoStart.class);
 
         setContentView(R.layout.activity_main);
@@ -46,12 +51,14 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View view) {
                 sendBroadcast(intent);
+//                result= DemoSyncJob.scheduleJob();
             }
         });
         stop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Util.jobScheduler.cancelAll();
+//                JobManager.instance().cancel(result);
             }
         });
 
@@ -63,27 +70,28 @@ public class MainActivity extends Activity {
         registerReceiver(myReceiver, intentFilter);
 
     }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        // Store our shared preference
-        getSharedPreferences("ourInfo", MODE_PRIVATE).edit().putBoolean("active", true).apply();
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-
-        // Store our shared preference
-        getSharedPreferences("ourInfo", MODE_PRIVATE).edit().putBoolean("active", false).apply();
-    }
+//
+//    @Override
+//    protected void onStart() {
+//        super.onStart();
+//
+//        // Store our shared preference
+//        getSharedPreferences("ourInfo", MODE_PRIVATE).edit().putBoolean("active", true).apply();
+//    }
+//
+//    @Override
+//    protected void onStop() {
+//        super.onStop();
+//
+//        // Store our shared preference
+//        getSharedPreferences("ourInfo", MODE_PRIVATE).edit().putBoolean("active", false).apply();
+//    }
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         unregisterReceiver(myReceiver);
+        myReceiver = null;
+        super.onDestroy();
     }
 
     private class MyReceiver extends BroadcastReceiver {
@@ -92,7 +100,7 @@ public class MainActivity extends Activity {
         public void onReceive(Context arg0, Intent arg1) {
 
             if(textView != null) {
-                String dataPassed = arg1.getStringExtra("dataPassed");
+                String dataPassed = arg1.getStringExtra(MyService.DATA_NAME);
                 String displayString = textView.getText().toString() + "\n" + dataPassed;
                 textView.setText(displayString);
             }

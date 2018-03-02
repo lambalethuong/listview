@@ -3,7 +3,9 @@ package com.example.sgvn89.servicedemo;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.media.Ringtone;
@@ -13,9 +15,11 @@ import android.os.Build;
 import android.os.IBinder;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.NotificationCompat;
 
 import java.util.Date;
+import java.util.PriorityQueue;
 
 /**
  * Created by sgvn89 on 2018/02/26.
@@ -24,34 +28,67 @@ import java.util.Date;
 
 public class MyService extends Service {
 
+    public static final String NOTIFICATION_CHANNEL_ID_SERVICE = "com.example.sgvn89.servicedemo";
 
     final static String MY_ACTION = "MY_ACTION";
+    final static String DATA_NAME = "DATA_NAME";
     static int count = 0; // count to 12, 1 minute
 
     @Override
     public void onCreate() {
         super.onCreate();
-        startForeground(Util.JOB_ID,new Notification());
+        startForeground();
+        //startForeground(Util.JOB_ID, new Notification());
+    }
+
+    private void startForeground() {
+        String channelId = "";
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            channelId = createNotificationChannel();
+        } else {
+            // If earlier version channel ID is not used
+            // https://developer.android.com/reference/android/support/v4/app/NotificationCompat.Builder.html#NotificationCompat.Builder(android.content.Context)
+        }
+
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, channelId );
+        Notification notification = notificationBuilder.setOngoing(true)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setCategory(Notification.CATEGORY_SERVICE)
+                .build();
+        startForeground(Util.JOB_ID, notification);
+    }
+
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private String createNotificationChannel(){
+        String channelId = "my_service";
+        String channelName = "My Background Service";
+        NotificationChannel chan = new NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_NONE);
+        chan.setLightColor(Color.BLUE);
+        chan.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
+        NotificationManager service = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        if (service != null) {
+            service.createNotificationChannel(chan);
+        }
+        return channelId;
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         // Query the database and show alarm if it applies
-        boolean isActivityActive = getSharedPreferences("ourInfo", MODE_PRIVATE).getBoolean("active",false);
-        if(isActivityActive){ // update to screen
-            String data = new Date().toString();
-            Intent shareIntent = new Intent();
-            shareIntent.setAction(MY_ACTION);
-            shareIntent.putExtra("dataPassed", data);
-            sendBroadcast(shareIntent);
-        }
+        String data = new Date().toString();
+        Intent shareIntent = new Intent();
+        shareIntent.setAction(MY_ACTION);
+        shareIntent.putExtra(DATA_NAME, data);
+        sendBroadcast(shareIntent);
 
-        count++;
-        if(count == 6)
-        {
-            showNotification();
-            count = 0;
-        }
+//        count++;
+//        if(count == 6)
+//        {
+//            showNotification();
+//            count = 0;
+//        }
 //        else{ // write to SD card
 //            File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath(), "/date.txt");
 //            try {
@@ -125,7 +162,7 @@ public class MyService extends Service {
         Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
         if(vibrator!=null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    vibrator.vibrate(VibrationEffect.createOneShot(150, 10));
+                vibrator.vibrate(VibrationEffect.createOneShot(150, 10));
             } else {
                 vibrator.vibrate(150);
             }
